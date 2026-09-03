@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Result | DermaLens.AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- NAVIGATION -->
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/upload">📤 Upload</a>
+        <a href="/dashboard?image_name={{ image_name }}">
+            🤖 Dashboard
+        </a>
+    </nav>
+
+
+    <!-- HEADER -->
+    <div class="dashboard-header">
+
+        <h1>🔬 DermaLens.AI Result</h1>
+
+        <p class="subtitle">
+            AI-assisted skin image analysis
+        </p>
+
+    </div>
+
+
+    <!-- RESULT GRID -->
+
+    <div class="dashboard-grid">
+
+
+        <!-- IMAGE -->
+
+        <div class="result-card">
+
+            <h2>🖼️ Analyzed Image</h2>
+
+            <img
+                src="{{ url_for('static',
+                         filename='uploads/' + image_name) }}"
+                alt="Analyzed skin image"
+                class="analysis-image">
+
+            <p class="file-name">
+                📁 {{ image_name }}
+            </p>
+
+        </div>
+
+
+        <!-- AI RESULT -->
+
+        <div class="result-card">
+
+            <h2>🤖 AI Analysis Result</h2>
+
+
+            <!-- STATUS -->
+
+            <div class="analysis-status">
+
+                <span class="status-dot"></span>
+
+                Analysis completed
+
+            </div>
+
+
+            <!-- PREDICTION -->
+
+            <div class="info-box">
+
+                <h3>📊 Prediction</h3>
+
+                <p class="prediction-text">
+                    {{ prediction }}
+                </p>
+
+            </div>
+
+
+            <!-- CONFIDENCE -->
+
+            <div class="info-box">
+
+                <h3>🎯 Confidence</h3>
+
+                <div class="confidence-bar">
+
+                    <div class="confidence-fill"
+                         style="width: {{ confidence }}%;">
+                    </div>
+
+                </div>
+
+                <p>
+                    {{ confidence }}%
+                </p>
+
+            </div>
+
+
+            <!-- RECOMMENDATION -->
+
+            <div class="info-box">
+
+                <h3>💡 Recommendation</h3>
+
+                <p>
+                    {{ recommendation }}
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ACTION BUTTONS -->
+
+    <div class="actions">
+
+        <a
+            href="{{ url_for('report',
+                    image_name=image_name) }}"
+            class="start-btn">
+
+            📄 Download PDF Report
+
+        </a>
+
+
+        <a
+            href="/upload"
+            class="secondary-btn">
+
+            📤 Analyze Another Image
+
+        </a>
+
+
+        <a
+            href="/"
+            class="secondary-btn">
+
+            🏠 Home
+
+        </a>
+
+    </div>
+
+
+    <!-- DISCLAIMER -->
+
+    <div class="disclaimer">
+
+        <h3>⚠️ Medical Disclaimer</h3>
+
+        <p>
+
+            DermaLens.AI is an AI-assisted prototype and
+            is not a substitute for professional medical
+            diagnosis.
+
+            Always consult a qualified dermatologist
+            for medical advice.
+
+        </p>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

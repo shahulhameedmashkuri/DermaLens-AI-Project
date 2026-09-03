@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DermaLens.AI</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+<nav class="navbar">
+    <a href="/">🏠 Home</a>
+    <a href="/upload">📤 Upload</a>
+    <a href="/dashboard">🤖 Dashboard</a>
+</nav>
+    <h1>🩺 DermaLens.AI</h1>
+
+    <p class="subtitle">
+        AI Powered Skin Disease Detection System
+    </p>
+
+<form action="/" method="POST" enctype="multipart/form-data">
+
+    <div class="upload-box">
+
+        <label for="imageInput" class="upload-label">
+
+            📁 Click Here or Drag & Drop Skin Image
+
+        </label>
+
+        <input
+            type="file"
+            id="imageInput"
+            name="image"
+            accept="image/*"
+            required
+            hidden>
+
+        <img
+            id="preview"
+            src=""
+            style="display:none; width:300px; margin-top:20px; border-radius:15px;">
+
+    </div>
+
+    <br>
+
+    <button type="submit">
+        🔍 Analyze Skin
+    </button>
+
+</form>

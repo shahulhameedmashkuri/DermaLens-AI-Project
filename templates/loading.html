@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Analyzing | DermaLens.AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        .loading-box {
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #ddd;
+            border-top: 6px solid #2196f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 20px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="loading-box">
+
+        <h1>🩺 DermaLens.AI</h1>
+
+        <div class="loader"></div>
+
+        <h2>🔬 Analyzing Skin Image...</h2>
+
+        <p class="loading-text">
+            AI is processing your image.
+        </p>
+
+        <p>
+            Please wait...
+        </p>
+
+    </div>
+
+</div>
+
+<script>
+    setTimeout(function() {
+
+        window.location.href =
+            "{{ url_for('dashboard', image_name=image_name) }}";
+
+    }, 3000);
+</script>
+
+</body>
+</html>

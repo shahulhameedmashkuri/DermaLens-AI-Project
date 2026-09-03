@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Dashboard | DermaLens.AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- NAVIGATION -->
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/upload">📤 Upload</a>
+        <a href="/dashboard">🤖 Dashboard</a>
+    </nav>
+
+
+    <!-- HEADER -->
+    <div class="dashboard-header">
+
+        <h1>🤖 DermaLens.AI Dashboard</h1>
+
+        <p class="subtitle">
+            AI-assisted skin image analysis
+        </p>
+
+    </div>
+
+
+    {% if image_name %}
+
+    <!-- MAIN DASHBOARD -->
+    <div class="dashboard-grid">
+
+
+        <!-- IMAGE CARD -->
+        <div class="result-card">
+
+            <h2>🖼️ Uploaded Image</h2>
+
+            <img
+                src="{{ url_for('static',
+                         filename='uploads/' + image_name) }}"
+                alt="Uploaded skin image"
+                class="analysis-image">
+
+            <p class="file-name">
+                📁 {{ image_name }}
+            </p>
+
+        </div>
+
+
+        <!-- AI ANALYSIS CARD -->
+        <div class="result-card">
+
+            <h2>🔬 AI Analysis</h2>
+
+            <div class="analysis-status">
+                <span class="status-dot"></span>
+                Image received successfully
+            </div>
+
+
+            <!-- MODEL STATUS -->
+            <div class="info-box">
+
+                <h3>🧠 AI Model Status</h3>
+
+                <p>
+                    Image processing pipeline is ready.
+                </p>
+
+                <span class="badge">
+                    Awaiting Validated AI Model
+                </span>
+
+            </div>
+
+
+            <!-- PREDICTION -->
+            <div class="info-box">
+
+                <h3>📊 Prediction</h3>
+
+                <p class="prediction-text">
+                    Prediction will appear here after
+                    the AI model processes the image.
+                </p>
+
+            </div>
+
+
+            <!-- CONFIDENCE -->
+            <div class="info-box">
+
+                <h3>🎯 Confidence</h3>
+
+                <div class="confidence-bar">
+
+                    <div class="confidence-fill"
+                         style="width: 0%;">
+                    </div>
+
+                </div>
+
+                <p>
+                    Awaiting model prediction
+                </p>
+
+            </div>
+
+
+            <!-- RECOMMENDATION -->
+            <div class="info-box">
+
+                <h3>💡 Recommendation</h3>
+
+                <p>
+                    Please consult a qualified dermatologist
+                    for professional diagnosis and treatment.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+    
+<a href="{{ url_for('analyze', image_name=image_name) }}"
+   class="start-btn">
+    🔬 Analyze Image
+</a>
+
+    <!-- ACTION BUTTONS -->
+    <div class="actions">
+
+        <!-- PDF REPORT BUTTON -->
+        <a href="{{ url_for('report', image_name=image_name) }}"
+           class="start-btn">
+            📄 Generate PDF Report
+        </a>
+
+        <!-- UPLOAD ANOTHER -->
+        <a href="/upload" class="start-btn">
+            📤 Analyze Another Image
+        </a>
+
+        <!-- HOME -->
+        <a href="/" class="secondary-btn">
+            🏠 Back to Home
+        </a>
+
+    </div>
+
+
+    <!-- DISCLAIMER -->
+    <div class="disclaimer">
+
+        <h3>⚠️ Medical Disclaimer</h3>
+
+        <p>
+            DermaLens.AI is an AI-assisted prototype and is not
+            a substitute for professional medical diagnosis.
+            Always consult a qualified dermatologist for medical advice.
+        </p>
+
+    </div>
+
+
+    {% else %}
+
+
+    <!-- EMPTY DASHBOARD -->
+    <div class="result-card empty-state">
+
+        <h2>📂 No Image Selected</h2>
+
+        <p>
+            Upload a skin image to begin AI-assisted analysis.
+        </p>
+
+        <a href="/upload" class="start-btn">
+            📤 Upload Skin Image
+        </a>
+
+    </div>
+
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>
