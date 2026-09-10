@@ -111,6 +111,9 @@ Start the Flask application:
 ```bash
 python app.py
 
+### 🌐 Live Demo
+
+[Open DermaLens.AI Live Website](https://dermalens-ai-project.onrender.com/)
 
 ---
 
