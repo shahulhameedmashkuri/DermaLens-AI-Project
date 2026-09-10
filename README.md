@@ -104,16 +104,12 @@ pip install -r requirements.txt
 
 ## ▶️ Run the Application
 
+### Local Development
+
 Start the Flask application:
 
-bash
+```bash
 python app.py
-
-
-Then open:
-
-text
-http://127.0.0.1:5000
 
 
 ---
