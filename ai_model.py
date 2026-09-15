@@ -1,16 +1,8 @@
 ﻿from PIL import Image
 import os
-from transformers import pipeline
-
-classifier = pipeline(
-    "image-classification",
-    model="microsoft/resnet-50",
-    device=-1
-)
 
 
 def analyze_skin_image(image_path):
-
     try:
         if not os.path.isfile(image_path):
             return {
@@ -20,21 +12,32 @@ def analyze_skin_image(image_path):
 
         image = Image.open(image_path).convert("RGB")
 
-        results = classifier(image)
-        best_result = results[0]
+        width, height = image.size
 
-        prediction = best_result["label"]
-        confidence = round(best_result["score"] * 100, 2)
+        if width < 100 or height < 100:
+            return {
+                "success": False,
+                "error": "Please upload a clearer image."
+            }
+
+        # Lightweight image screening only
+        pixels = list(image.resize((50, 50)).getdata())
+
+        average_red = sum(pixel[0] for pixel in pixels) / len(pixels)
+        average_green = sum(pixel[1] for pixel in pixels) / len(pixels)
+        average_blue = sum(pixel[2] for pixel in pixels) / len(pixels)
+
+        prediction = "Image received for preliminary screening"
+        confidence = 0
 
         return {
             "success": True,
             "prediction": prediction,
             "confidence": confidence,
             "recommendation": (
-                f"Model output: {prediction}. "
-                "This is a general image-classification result, "
-                "not a skin-disease diagnosis. "
-                "Please consult a qualified dermatologist."
+                "This is a lightweight prototype screening result. "
+                "It is not an AI-based skin-disease diagnosis. "
+                "Please consult a qualified dermatologist for accurate diagnosis."
             )
         }
 

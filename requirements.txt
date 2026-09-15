@@ -2,7 +2,4 @@ Flask
 Werkzeug
 reportlab
 Pillow
-transformers
-torch
-torchvision
 gunicorn
