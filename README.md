@@ -2,8 +2,6 @@
 
 ## AI-Assisted Skin Image Analysis System
 
-https://dermalens-ai-project-2.onrender.com/
-
 DermaLens.AI is a web-based AI-assisted skin image analysis prototype built using Python and Flask. The application allows users to upload a skin image, process it through an analysis pipeline, view the analysis result, and download a PDF report.
 
 > ⚠️ *Medical Disclaimer:* This project is an educational and research prototype. It is not a medical device and must not be used as a substitute for professional medical diagnosis, treatment, or advice.
