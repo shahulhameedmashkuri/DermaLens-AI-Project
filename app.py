@@ -1,28 +1,62 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, session
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from reportlab.pdfgen import canvas
 from ai_model import analyze_skin_image
-import os
+from pathlib import Path
+import sqlite3
 
 
 # ==================================================
 # APP SETUP
 # ==================================================
 
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+
+app = Flask(
+    __name__,
+    template_folder=str(BASE_DIR / "templates"),
+    static_folder=str(BASE_DIR / "static")
+)
+
+app.secret_key = "dermalens-secret-key"
 
 
 # ==================================================
 # FOLDERS
 # ==================================================
 
-UPLOAD_FOLDER = "static/uploads"
-REPORT_FOLDER = "reports"
+UPLOAD_FOLDER = BASE_DIR / "static" / "uploads"
+REPORT_FOLDER = BASE_DIR / "reports"
+DATABASE = BASE_DIR / "users.db"
 
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = str(UPLOAD_FOLDER)
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(REPORT_FOLDER, exist_ok=True)
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+REPORT_FOLDER.mkdir(parents=True, exist_ok=True)
+
+
+# ==================================================
+# DATABASE
+# ==================================================
+
+def init_db():
+
+    connection = sqlite3.connect(DATABASE)
+
+    connection.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    """)
+
+    connection.commit()
+    connection.close()
+
+
+init_db()
 
 
 # ==================================================
@@ -47,11 +81,117 @@ def allowed_file(filename):
 
 
 # ==================================================
+# LOGIN REQUIRED
+# ==================================================
+
+def login_required():
+
+    return "username" in session
+
+
+# ==================================================
+# SIGNUP
+# ==================================================
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+
+    if request.method == "POST":
+
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not username or not password:
+            return "Username and password are required."
+
+        if len(password) < 6:
+            return "Password must contain at least 6 characters."
+
+        connection = sqlite3.connect(DATABASE)
+
+        try:
+
+            hashed_password = generate_password_hash(password)
+
+            connection.execute(
+                """
+                INSERT INTO users (username, password)
+                VALUES (?, ?)
+                """,
+                (username, hashed_password)
+            )
+
+            connection.commit()
+
+        except sqlite3.IntegrityError:
+
+            connection.close()
+            return "Username already exists. Please login."
+
+        connection.close()
+
+        return redirect(url_for("login"))
+
+    return render_template("signup.html")
+
+
+# ==================================================
+# LOGIN
+# ==================================================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        connection = sqlite3.connect(DATABASE)
+
+        user = connection.execute(
+            """
+            SELECT username, password
+            FROM users
+            WHERE username = ?
+            """,
+            (username,)
+        ).fetchone()
+
+        connection.close()
+
+        if user and check_password_hash(user[1], password):
+
+            session["username"] = user[0]
+
+            return redirect(url_for("home"))
+
+        return "Invalid username or password."
+
+    return render_template("login.html")
+
+
+# ==================================================
+# LOGOUT
+# ==================================================
+
+@app.route("/logout")
+def logout():
+
+    session.pop("username", None)
+
+    return redirect(url_for("login"))
+
+
+# ==================================================
 # HOME
 # ==================================================
 
 @app.route("/")
 def home():
+
+    if not login_required():
+        return redirect(url_for("login"))
 
     return render_template("index.html")
 
@@ -63,43 +203,33 @@ def home():
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
 
+    if not login_required():
+        return redirect(url_for("login"))
+
     if request.method == "POST":
 
-        # Check image field
         if "image" not in request.files:
-            return "No image selected"
+            return "No image selected."
 
         image = request.files["image"]
 
-        # Check filename
         if image.filename == "":
-            return "No image selected"
+            return "No image selected."
 
-        # Check extension
         if not allowed_file(image.filename):
-            return (
-                "Invalid image type. "
-                "Please upload PNG, JPG, JPEG or WEBP."
-            )
+            return "Invalid image type."
 
-        # Secure filename
         filename = secure_filename(image.filename)
 
         if filename == "":
-            return "Invalid filename"
+            return "Invalid filename."
 
-        # Image save path
-        image_path = os.path.join(
-            app.config["UPLOAD_FOLDER"],
-            filename
-        )
+        image_path = UPLOAD_FOLDER / filename
 
-        # Save image
-        image.save(image_path)
+        image.save(str(image_path))
 
         print("Image uploaded successfully:", filename)
 
-        # Redirect to dashboard
         return redirect(
             url_for(
                 "dashboard",
@@ -117,6 +247,9 @@ def upload():
 @app.route("/dashboard")
 def dashboard():
 
+    if not login_required():
+        return redirect(url_for("login"))
+
     image_name = request.args.get("image_name")
 
     return render_template(
@@ -132,48 +265,28 @@ def dashboard():
 @app.route("/analyze")
 def analyze():
 
+    if not login_required():
+        return redirect(url_for("login"))
+
     image_name = request.args.get("image_name")
 
-    # Check image name
     if not image_name:
-        return redirect(
-            url_for("upload")
-        )
+        return redirect(url_for("upload"))
 
-    # Secure filename
     image_name = secure_filename(image_name)
+    image_path = UPLOAD_FOLDER / image_name
 
-    # Image path
-    image_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        image_name
-    )
+    if not image_path.is_file():
+        return "Image not found. Please upload again."
 
-    # Check image exists
-    if not os.path.isfile(image_path):
+    analysis = analyze_skin_image(str(image_path))
 
-        return (
-            "Image not found. "
-            "Please upload the image again."
-        )
-
-    # ===============================================
-    # AI ANALYSIS
-    # ===============================================
-
-    analysis = analyze_skin_image(
-        image_path
-    )
-
-    # Check analysis success
     if not analysis.get("success"):
-
         return analysis.get(
             "error",
             "Unable to analyze image."
         )
 
-    # Show result
     return render_template(
         "result.html",
         image_name=image_name,
@@ -199,40 +312,23 @@ def analyze():
 @app.route("/result")
 def result():
 
+    if not login_required():
+        return redirect(url_for("login"))
+
     image_name = request.args.get("image_name")
 
-    # Check image
     if not image_name:
+        return redirect(url_for("upload"))
 
-        return redirect(
-            url_for("upload")
-        )
-
-    # Secure filename
     image_name = secure_filename(image_name)
+    image_path = UPLOAD_FOLDER / image_name
 
-    # Image path
-    image_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        image_name
-    )
+    if not image_path.is_file():
+        return "Image not found. Please upload again."
 
-    # Check image exists
-    if not os.path.isfile(image_path):
+    analysis = analyze_skin_image(str(image_path))
 
-        return (
-            "Image not found. "
-            "Please upload the image again."
-        )
-
-    # Run analysis
-    analysis = analyze_skin_image(
-        image_path
-    )
-
-    # Check success
     if not analysis.get("success"):
-
         return analysis.get(
             "error",
             "Unable to analyze image."
@@ -263,34 +359,21 @@ def result():
 @app.route("/report")
 def report():
 
+    if not login_required():
+        return redirect(url_for("login"))
+
     image_name = request.args.get("image_name")
 
-    # Check image name
     if not image_name:
+        return "No image selected."
 
-        return "No image selected"
-
-    # Secure filename
     image_name = secure_filename(image_name)
+    image_path = UPLOAD_FOLDER / image_name
 
-    # Image path
-    image_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        image_name
-    )
+    if not image_path.is_file():
+        return "Image not found. Please upload again."
 
-    # Check image exists
-    if not os.path.isfile(image_path):
-
-        return (
-            "Image not found. "
-            "Please upload the image again."
-        )
-
-    # Run analysis again for report
-    analysis = analyze_skin_image(
-        image_path
-    )
+    analysis = analyze_skin_image(str(image_path))
 
     prediction = analysis.get(
         "prediction",
@@ -307,29 +390,13 @@ def report():
         "Please consult a qualified dermatologist."
     )
 
-    # PDF filename
-    report_filename = "dermalens_report.pdf"
+    report_path = REPORT_FOLDER / "dermalens_report.pdf"
 
-    report_path = os.path.join(
-        REPORT_FOLDER,
-        report_filename
-    )
+    pdf = canvas.Canvas(str(report_path))
 
-    # Create PDF
-    pdf = canvas.Canvas(
-        report_path
-    )
+    pdf.setTitle("DermaLens.AI Report")
 
-    pdf.setTitle(
-        "DermaLens.AI Report"
-    )
-
-    # Title
-    pdf.drawString(
-        50,
-        800,
-        "DermaLens.AI"
-    )
+    pdf.drawString(50, 800, "DermaLens.AI")
 
     pdf.drawString(
         50,
@@ -337,69 +404,64 @@ def report():
         "AI-Assisted Skin Image Analysis Report"
     )
 
-    # Image
     pdf.drawString(
         50,
         720,
+        f"Username: {session.get('username', 'User')}"
+    )
+
+    pdf.drawString(
+        50,
+        690,
         f"Image: {image_name}"
     )
 
-    # Prediction
     pdf.drawString(
         50,
-        680,
-        f"Prediction: {prediction}"
-    )
-
-    # Confidence
-    pdf.drawString(
-        50,
-        640,
-        f"Confidence: {confidence}%"
-    )
-
-    # Recommendation
-    pdf.drawString(
-        50,
-        600,
-        "Recommendation:"
+        650,
+        f"AI Model Output: {prediction}"
     )
 
     pdf.drawString(
         50,
-        580,
-        recommendation
+        610,
+        f"Model Confidence: {confidence}%"
     )
 
-    # Disclaimer
-    pdf.drawString(
-        50,
-        520,
-        "Medical Disclaimer:"
-    )
+    pdf.drawString(50, 560, "Recommendation:")
 
     pdf.drawString(
         50,
-        490,
-        "DermaLens.AI is an AI-assisted prototype and is not"
+        535,
+        recommendation[:100]
+    )
+
+    pdf.drawString(50, 480, "Medical Disclaimer:")
+
+    pdf.drawString(
+        50,
+        455,
+        "This is an AI-assisted research prototype."
     )
 
     pdf.drawString(
         50,
-        470,
-        "a substitute for professional medical diagnosis."
+        435,
+        "It is not a substitute for professional diagnosis."
     )
 
-    # Save PDF
+    pdf.drawString(
+        50,
+        415,
+        "Please consult a qualified dermatologist."
+    )
+
     pdf.save()
 
-    print(
-        "PDF report generated successfully."
-    )
+    print("PDF report generated successfully.")
 
-    # Download PDF
     return send_file(
-        report_path,
+        str(report_path),
         as_attachment=True,
         download_name="dermalens_report.pdf"
     )
@@ -411,15 +473,10 @@ def report():
 
 if __name__ == "__main__":
 
-    print("")
     print("======================================")
     print("       DermaLens.AI is running!")
     print("======================================")
-    print("Open this URL in your browser:")
-    print("http://127.0.0.1:5000")
+    print("Open: http://127.0.0.1:5000")
     print("======================================")
-    print("")
 
-    app.run(
-        debug=True
-    )
+    app.run(debug=True)
